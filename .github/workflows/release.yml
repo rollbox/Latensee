@@ -1,0 +1,29 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build app bundle
+        run: |
+          mkdir -p Latensee.app/Contents/MacOS
+          mkdir -p Latensee.app/Contents/Resources
+          cp Info.plist Latensee.app/Contents/Info.plist
+          swiftc main.swift -O -o Latensee.app/Contents/MacOS/Latensee
+
+      - name: Create zip
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent Latensee.app Latensee.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Latensee.zip
+          generate_release_notes: true
