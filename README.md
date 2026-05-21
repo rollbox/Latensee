@@ -1,4 +1,4 @@
-# TransparentOverlay
+# Latensee
 
 A minimal macOS overlay app that continuously pings Cloudflare and displays network latency as a real-time graph.
 
@@ -7,7 +7,8 @@ A minimal macOS overlay app that continuously pings Cloudflare and displays netw
 - Pings `https://cp.cloudflare.com/generate_204` every 2 seconds
 - Displays latency as a live line chart (up to 60 data points)
 - Fixed Y-axis at 2000ms for stable visual reference
-- Timeout handling: skips overlapping requests, 2s timeout, golden yellow fill for timeout regions
+- Latest data point always at right edge (Grafana-style scrolling)
+- Timeout handling: skips overlapping requests, 2s timeout, yellow dot markers for timeouts
 - Shows current latency value and max latency in the graph
 - Transparent overlay that stays on top of all windows
 - Passes through all mouse/keyboard input in normal mode
@@ -20,8 +21,8 @@ A minimal macOS overlay app that continuously pings Cloudflare and displays netw
 ## Build & Run
 
 ```bash
-swiftc main.swift -o overlay
-./overlay
+swiftc main.swift -o latensee
+./latensee
 ```
 
 ## Usage
@@ -37,8 +38,8 @@ swiftc main.swift -o overlay
 
 ## Graph Indicators
 
-- **Blue line/fill** — normal latency (lower is better)
-- **Golden yellow fill** — timeout regions (request took >2s)
+- **Blue line** — normal latency (lower is better)
+- **Yellow dots** — timeout points (request took >2s)
 - **"TIMEOUT" label** — current ping timed out
 - **max: Xms** — highest latency in the current window
 

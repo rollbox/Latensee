@@ -1,4 +1,5 @@
 overlay
+latensee
 *.o
 .DS_Store
 ScreenShot_*.png
