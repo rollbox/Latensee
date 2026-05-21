@@ -425,8 +425,10 @@ class OverlayView: NSView {
 
         let margin: CGFloat = 10
         let textReserve: CGFloat = 24
+        let bottomReserve: CGFloat = 16
         let graphRect = bounds.insetBy(dx: margin, dy: margin)
         let curveMaxY = graphRect.maxY - textReserve
+        let curveMinY = graphRect.minY + bottomReserve
 
         NSColor.black.withAlphaComponent(0.075).setFill()
         let bgPath = NSBezierPath(roundedRect: graphRect, xRadius: 6, yRadius: 6)
@@ -434,7 +436,7 @@ class OverlayView: NSView {
 
         let maxLatency: Double = 2000
         let stepX = graphRect.width / CGFloat(maxDataPoints - 1)
-        let curveHeight = curveMaxY - graphRect.minY
+        let curveHeight = curveMaxY - curveMinY
 
         let timeoutColor = NSColor(red: 0.9, green: 0.7, blue: 0.1, alpha: 1.0)
 
@@ -446,7 +448,7 @@ class OverlayView: NSView {
         for (i, entry) in latencyData.enumerated() {
             let offset = maxDataPoints - latencyData.count
             let x = graphRect.minX + stepX * CGFloat(i + offset)
-            let y = graphRect.minY + curveHeight * CGFloat(min(entry.ms / maxLatency, 1.0))
+            let y = curveMinY + curveHeight * CGFloat(min(entry.ms / maxLatency, 1.0))
             let point = NSPoint(x: x, y: min(y, curveMaxY))
 
             if i == 0 {
