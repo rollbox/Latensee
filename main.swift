@@ -168,6 +168,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func syncHistoryHighlight(_ highlighted: Bool) {
+        guard let hv = historyView else { return }
+        if hv.isHighlighted != highlighted {
+            hv.isHighlighted = highlighted
+            hv.needsDisplay = true
+        }
+    }
+
     func setupMouseTracking() {
         window.ignoresMouseEvents = false
         window.acceptsMouseMovedEvents = true
@@ -401,6 +409,7 @@ class OverlayView: NSView {
     var traceHighlight: CGFloat = 0
     var highlightTimer: Timer?
     var isInteractive = false
+    var isHighlighted = false
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
@@ -423,6 +432,9 @@ class OverlayView: NSView {
 
         guard latencyData.count >= 2 else { return }
 
+        isHighlighted = isInteractive || (latencyData.last?.timeout ?? false) || traceHighlight > 0
+        appDelegate?.syncHistoryHighlight(isHighlighted)
+
         let margin: CGFloat = 10
         let textReserve: CGFloat = 24
         let bottomReserve: CGFloat = 16
@@ -430,7 +442,7 @@ class OverlayView: NSView {
         let curveMaxY = graphRect.maxY - textReserve
         let curveMinY = graphRect.minY + bottomReserve
 
-        NSColor.black.withAlphaComponent(0.075).setFill()
+        NSColor.black.withAlphaComponent(isInteractive ? 0.5 : 0.075).setFill()
         let bgPath = NSBezierPath(roundedRect: graphRect, xRadius: 6, yRadius: 6)
         bgPath.fill()
 
@@ -458,11 +470,11 @@ class OverlayView: NSView {
             }
 
             if entry.timeout {
-                timeoutPoints.append(point)
+                timeoutPoints.append(NSPoint(x: point.x, y: curveMaxY))
             }
         }
 
-        let lineColor: NSColor = isInteractive ? NSColor.white : overlayColor.withAlphaComponent(overlayOpacity)
+        let lineColor: NSColor = isHighlighted ? NSColor.white : overlayColor.withAlphaComponent(overlayOpacity)
         lineColor.setStroke()
         linePath.stroke()
 
@@ -481,10 +493,10 @@ class OverlayView: NSView {
             let currentText: String
             if last.timeout {
                 currentText = "TIMEOUT"
-                labelColor = isInteractive ? NSColor.white : timeoutColor.withAlphaComponent(0.8)
+                labelColor = isHighlighted ? NSColor.white : timeoutColor.withAlphaComponent(0.8)
             } else {
                 currentText = String(format: "%.0f", last.ms)
-                labelColor = isInteractive ? NSColor.white : overlayColor.withAlphaComponent(overlayOpacity * 0.8)
+                labelColor = isHighlighted ? NSColor.white : overlayColor.withAlphaComponent(overlayOpacity * 0.8)
             }
             let maxText: String
             if actualMax >= 2000 {
@@ -505,7 +517,7 @@ class OverlayView: NSView {
 
         if !traceInfo.isEmpty {
             let traceColor: NSColor
-            if isInteractive {
+            if isHighlighted {
                 traceColor = NSColor.white
             } else {
                 let baseAlpha = overlayOpacity * 0.5
@@ -558,6 +570,7 @@ class TraceHistoryView: NSView {
     var overlayColor: NSColor = .white
     var overlayOpacity: CGFloat = 0.35
     var isInteractive = false
+    var isHighlighted = false
 
     override func draw(_ dirtyRect: NSRect) {
         NSColor.clear.setFill()
@@ -582,13 +595,14 @@ class TraceHistoryView: NSView {
 
             let ago = formatAgo(now.timeIntervalSince(entry.time))
             let text = "\(ago)  \(entry.info)"
-            let textColor: NSColor = NSColor.white.withAlphaComponent(1.0)
+            let textColor: NSColor = isHighlighted ? NSColor.white : overlayColor.withAlphaComponent(overlayOpacity * 0.6)
             let attrs: [NSAttributedString.Key: Any] = [
                 .foregroundColor: textColor,
                 .font: NSFont.monospacedSystemFont(ofSize: 10, weight: .medium)
             ]
             let str = NSAttributedString(string: text, attributes: attrs)
-            str.draw(at: NSPoint(x: contentRect.minX, y: y))
+            let strSize = str.size()
+            str.draw(at: NSPoint(x: contentRect.maxX - strSize.width, y: y))
         }
     }
 
