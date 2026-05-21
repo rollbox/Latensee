@@ -28,7 +28,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         let screen = NSScreen.main!
         let visibleFrame = screen.visibleFrame
-        let width: CGFloat = 320
+        let width: CGFloat = 160
         let height: CGFloat = 120
         let frame = NSRect(
             x: visibleFrame.maxX - width,
@@ -123,7 +123,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let lineHeight: CGFloat = 16
         let padding: CGFloat = 10
-        let historyHeight = CGFloat(traceHistory.count - 1) * lineHeight + padding * 2
+        let entryCount = traceHistory.count - 1
+        let historyHeight = CGFloat(entryCount) * lineHeight * 2 + padding * 2
         let mainFrame = window.frame
         let historyFrame = NSRect(
             x: mainFrame.origin.x,
@@ -589,20 +590,30 @@ class TraceHistoryView: NSView {
 
         let now = Date()
         let pastEntries = history.dropLast().reversed()
+        let agoColor: NSColor = isHighlighted ? NSColor.white.withAlphaComponent(0.5) : overlayColor.withAlphaComponent(overlayOpacity * 0.3)
+        let textColor: NSColor = isHighlighted ? NSColor.white : overlayColor.withAlphaComponent(overlayOpacity * 0.6)
+        let agoAttrs: [NSAttributedString.Key: Any] = [
+            .foregroundColor: agoColor,
+            .font: NSFont.monospacedSystemFont(ofSize: 9, weight: .regular)
+        ]
+        let textAttrs: [NSAttributedString.Key: Any] = [
+            .foregroundColor: textColor,
+            .font: NSFont.monospacedSystemFont(ofSize: 10, weight: .medium)
+        ]
+
         for (i, entry) in pastEntries.enumerated() {
-            let y = contentRect.maxY - CGFloat(i + 1) * lineHeight
-            guard y >= contentRect.minY else { break }
+            let infoY = contentRect.maxY - CGFloat(i * 2 + 2) * lineHeight
+            let agoY = infoY + lineHeight
+            guard infoY >= contentRect.minY else { break }
 
             let ago = formatAgo(now.timeIntervalSince(entry.time))
-            let text = "\(ago)  \(entry.info)"
-            let textColor: NSColor = isHighlighted ? NSColor.white : overlayColor.withAlphaComponent(overlayOpacity * 0.6)
-            let attrs: [NSAttributedString.Key: Any] = [
-                .foregroundColor: textColor,
-                .font: NSFont.monospacedSystemFont(ofSize: 10, weight: .medium)
-            ]
-            let str = NSAttributedString(string: text, attributes: attrs)
-            let strSize = str.size()
-            str.draw(at: NSPoint(x: contentRect.maxX - strSize.width, y: y))
+            let agoStr = NSAttributedString(string: ago, attributes: agoAttrs)
+            let agoSize = agoStr.size()
+            agoStr.draw(at: NSPoint(x: contentRect.maxX - agoSize.width, y: agoY))
+
+            let infoStr = NSAttributedString(string: entry.info, attributes: textAttrs)
+            let infoSize = infoStr.size()
+            infoStr.draw(at: NSPoint(x: contentRect.maxX - infoSize.width, y: infoY))
         }
     }
 
