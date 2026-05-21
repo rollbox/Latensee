@@ -578,6 +578,7 @@ class TraceHistoryView: NSView {
         dirtyRect.fill()
 
         guard history.count > 1 else { return }
+        guard overlayOpacity > 0 else { return }
 
         let padding: CGFloat = 10
         let lineHeight: CGFloat = 16
@@ -592,14 +593,8 @@ class TraceHistoryView: NSView {
         let pastEntries = history.dropLast().reversed()
         let agoColor: NSColor = isHighlighted ? NSColor.white.withAlphaComponent(0.5) : overlayColor.withAlphaComponent(overlayOpacity * 0.3)
         let textColor: NSColor = isHighlighted ? NSColor.white : overlayColor.withAlphaComponent(overlayOpacity * 0.6)
-        let agoAttrs: [NSAttributedString.Key: Any] = [
-            .foregroundColor: agoColor,
-            .font: NSFont.monospacedSystemFont(ofSize: 9, weight: .regular)
-        ]
-        let textAttrs: [NSAttributedString.Key: Any] = [
-            .foregroundColor: textColor,
-            .font: NSFont.monospacedSystemFont(ofSize: 10, weight: .medium)
-        ]
+        let agoFont = NSFont.monospacedSystemFont(ofSize: 9, weight: .regular)
+        let textFont = NSFont.monospacedSystemFont(ofSize: 10, weight: .medium)
 
         for (i, entry) in pastEntries.enumerated() {
             let infoY = contentRect.maxY - CGFloat(i * 2 + 2) * lineHeight
@@ -607,11 +602,17 @@ class TraceHistoryView: NSView {
             guard infoY >= contentRect.minY else { break }
 
             let ago = formatAgo(now.timeIntervalSince(entry.time))
-            let agoStr = NSAttributedString(string: ago, attributes: agoAttrs)
+            let agoStr = NSAttributedString(string: ago, attributes: [
+                .foregroundColor: agoColor,
+                .font: agoFont
+            ])
             let agoSize = agoStr.size()
             agoStr.draw(at: NSPoint(x: contentRect.maxX - agoSize.width, y: agoY))
 
-            let infoStr = NSAttributedString(string: entry.info, attributes: textAttrs)
+            let infoStr = NSAttributedString(string: entry.info, attributes: [
+                .foregroundColor: textColor,
+                .font: textFont
+            ])
             let infoSize = infoStr.size()
             infoStr.draw(at: NSPoint(x: contentRect.maxX - infoSize.width, y: infoY))
         }
