@@ -19,6 +19,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let pingURL = URL(string: "https://cp.cloudflare.com/generate_204")!
     let traceURL = URL(string: "https://cloudflare.com/cdn-cgi/trace")!
     var traceTimer: Timer?
+    var traceHistory: [(info: String, time: Date)] = []
+    let maxTraceHistory = 20
+    var historyWindow: NSWindow?
+    var historyView: TraceHistoryView?
+    var historyHideTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let screen = NSScreen.main!
@@ -66,7 +71,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func fetchTrace() {
-        URLSession.shared.dataTask(with: traceURL) { [weak self] data, _, error in
+        var request = URLRequest(url: traceURL)
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        let config = URLSessionConfiguration.ephemeral
+        config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        let session = URLSession(configuration: config)
+        session.dataTask(with: request) { [weak self] data, _, error in
             guard let data = data, error == nil,
                   let body = String(data: data, encoding: .utf8) else { return }
             var ip = ""
@@ -78,11 +88,72 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     loc = String(line.dropFirst(4))
                 }
             }
+            let info = "\(loc) | \(ip)"
             DispatchQueue.main.async {
-                self?.overlayView.traceInfo = "\(loc) | \(ip)"
-                self?.overlayView.needsDisplay = true
+                guard let self = self else { return }
+                let changed = !self.overlayView.traceInfo.isEmpty && self.overlayView.traceInfo != info
+                self.overlayView.updateTraceInfo(info)
+                if self.traceHistory.isEmpty || self.traceHistory.last?.info != info {
+                    self.traceHistory.append((info: info, time: Date()))
+                    if self.traceHistory.count > self.maxTraceHistory {
+                        self.traceHistory.removeFirst()
+                    }
+                }
+                if changed {
+                    self.showHistory()
+                }
             }
+            session.invalidateAndCancel()
         }.resume()
+    }
+
+    func showHistory() {
+        historyHideTimer?.invalidate()
+
+        guard traceHistory.count > 1 else { return }
+
+        let lineHeight: CGFloat = 16
+        let padding: CGFloat = 10
+        let historyHeight = CGFloat(traceHistory.count - 1) * lineHeight + padding * 2
+        let mainFrame = window.frame
+        let historyFrame = NSRect(
+            x: mainFrame.origin.x,
+            y: mainFrame.origin.y - historyHeight - 4,
+            width: mainFrame.width,
+            height: historyHeight
+        )
+
+        if historyWindow == nil {
+            historyWindow = NSWindow(
+                contentRect: historyFrame,
+                styleMask: .borderless,
+                backing: .buffered,
+                defer: false
+            )
+            historyWindow!.isOpaque = false
+            historyWindow!.backgroundColor = .clear
+            historyWindow!.ignoresMouseEvents = true
+            historyWindow!.level = window.level
+            historyWindow!.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]
+            historyWindow!.hasShadow = false
+
+            historyView = TraceHistoryView(frame: NSRect(x: 0, y: 0, width: historyFrame.width, height: historyFrame.height))
+            historyView!.wantsLayer = true
+            historyView!.layer?.isOpaque = false
+            historyWindow!.contentView = historyView
+        }
+
+        historyWindow!.setFrame(historyFrame, display: true)
+        historyView!.frame = NSRect(x: 0, y: 0, width: historyFrame.width, height: historyFrame.height)
+        historyView!.history = traceHistory
+        historyView!.overlayColor = overlayView.overlayColor
+        historyView!.overlayOpacity = overlayView.overlayOpacity
+        historyView!.needsDisplay = true
+        historyWindow!.orderFrontRegardless()
+
+        historyHideTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: false) { [weak self] _ in
+            self?.historyWindow?.orderOut(nil)
+        }
     }
 
     func setupMouseTracking() {
@@ -307,6 +378,8 @@ class OverlayView: NSView {
     let maxDataPoints = 60
     weak var appDelegate: AppDelegate?
     var traceInfo: String = ""
+    var traceHighlight: CGFloat = 0
+    var highlightTimer: Timer?
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
@@ -407,8 +480,10 @@ class OverlayView: NSView {
         }
 
         if !traceInfo.isEmpty {
+            let baseAlpha = overlayOpacity * 0.5
+            let highlightAlpha = baseAlpha + (1.0 - baseAlpha) * traceHighlight
             let traceAttrs: [NSAttributedString.Key: Any] = [
-                .foregroundColor: overlayColor.withAlphaComponent(overlayOpacity * 0.5),
+                .foregroundColor: NSColor.white.withAlphaComponent(highlightAlpha),
                 .font: NSFont.monospacedSystemFont(ofSize: 9, weight: .regular)
             ]
             let traceStr = NSAttributedString(string: traceInfo, attributes: traceAttrs)
@@ -423,6 +498,76 @@ class OverlayView: NSView {
             latencyData.removeFirst()
         }
         needsDisplay = true
+    }
+
+    func updateTraceInfo(_ info: String) {
+        if !traceInfo.isEmpty && traceInfo != info {
+            startHighlight()
+        }
+        traceInfo = info
+        needsDisplay = true
+    }
+
+    func startHighlight() {
+        traceHighlight = 1.0
+        highlightTimer?.invalidate()
+        highlightTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] timer in
+            guard let self = self else { timer.invalidate(); return }
+            self.traceHighlight -= 1.0 / (2.0 * 30.0)
+            if self.traceHighlight <= 0 {
+                self.traceHighlight = 0
+                timer.invalidate()
+            }
+            self.needsDisplay = true
+        }
+    }
+}
+
+class TraceHistoryView: NSView {
+    var history: [(info: String, time: Date)] = []
+    var overlayColor: NSColor = .white
+    var overlayOpacity: CGFloat = 0.35
+
+    override func draw(_ dirtyRect: NSRect) {
+        NSColor.clear.setFill()
+        dirtyRect.fill()
+
+        guard history.count > 1 else { return }
+
+        let padding: CGFloat = 10
+        let lineHeight: CGFloat = 16
+        let contentRect = bounds.insetBy(dx: padding, dy: padding / 2)
+
+        NSColor.black.withAlphaComponent(0.075).setFill()
+        let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 10, dy: 0), xRadius: 6, yRadius: 6)
+        bgPath.fill()
+
+        let now = Date()
+        let pastEntries = history.dropLast().reversed()
+        for (i, entry) in pastEntries.enumerated() {
+            let y = contentRect.maxY - CGFloat(i + 1) * lineHeight
+            guard y >= contentRect.minY else { break }
+
+            let ago = formatAgo(now.timeIntervalSince(entry.time))
+            let text = "\(ago)  \(entry.info)"
+            let alpha = overlayOpacity * 0.6
+            let attrs: [NSAttributedString.Key: Any] = [
+                .foregroundColor: overlayColor.withAlphaComponent(alpha),
+                .font: NSFont.monospacedSystemFont(ofSize: 9, weight: .regular)
+            ]
+            let str = NSAttributedString(string: text, attributes: attrs)
+            str.draw(at: NSPoint(x: contentRect.minX, y: y))
+        }
+    }
+
+    func formatAgo(_ seconds: TimeInterval) -> String {
+        if seconds < 60 {
+            return String(format: "%3.0fs", seconds)
+        } else if seconds < 3600 {
+            return String(format: "%3.0fm", seconds / 60)
+        } else {
+            return String(format: "%3.0fh", seconds / 3600)
+        }
     }
 }
 
