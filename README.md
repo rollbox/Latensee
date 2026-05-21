@@ -2,8 +2,6 @@
 
 A minimal macOS overlay that monitors network latency in real time by pinging Cloudflare.
 
-![macOS](https://img.shields.io/badge/macOS-13%2B-blue)
-
 ## Build & Run
 
 ```bash
@@ -14,7 +12,9 @@ swiftc main.swift -o latensee
 ## Overview
 
 - Pings `https://cp.cloudflare.com/generate_204` every 2 seconds
+- Fetches IP and location from `https://cloudflare.com/cdn-cgi/trace` every 10 seconds
 - Displays a live latency graph (fixed 2000ms Y-axis, Grafana-style scrolling)
+- Shows current/max latency, IP address and geo location
 - Transparent always-on-top overlay with hover-to-interact
 - Yellow dots indicate timeout (>2s)
 - Menu bar control (◉) for opacity, color, and visibility

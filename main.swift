@@ -17,6 +17,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var isInteractive = false
     var savedFrame: NSRect = .zero
     let pingURL = URL(string: "https://cp.cloudflare.com/generate_204")!
+    let traceURL = URL(string: "https://cloudflare.com/cdn-cgi/trace")!
+    var traceTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let screen = NSScreen.main!
@@ -53,6 +55,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupMouseTracking()
         setupStatusBar()
         startPinging()
+        startTrace()
+    }
+
+    func startTrace() {
+        fetchTrace()
+        traceTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
+            self?.fetchTrace()
+        }
+    }
+
+    func fetchTrace() {
+        URLSession.shared.dataTask(with: traceURL) { [weak self] data, _, error in
+            guard let data = data, error == nil,
+                  let body = String(data: data, encoding: .utf8) else { return }
+            var ip = ""
+            var loc = ""
+            for line in body.split(separator: "\n") {
+                if line.hasPrefix("ip=") {
+                    ip = String(line.dropFirst(3))
+                } else if line.hasPrefix("loc=") {
+                    loc = String(line.dropFirst(4))
+                }
+            }
+            DispatchQueue.main.async {
+                self?.overlayView.traceInfo = "\(loc) | \(ip)"
+                self?.overlayView.needsDisplay = true
+            }
+        }.resume()
     }
 
     func setupMouseTracking() {
@@ -276,6 +306,7 @@ class OverlayView: NSView {
     var latencyData: [(ms: Double, timeout: Bool)] = []
     let maxDataPoints = 60
     weak var appDelegate: AppDelegate?
+    var traceInfo: String = ""
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
@@ -303,7 +334,7 @@ class OverlayView: NSView {
         let graphRect = bounds.insetBy(dx: margin, dy: margin)
         let curveMaxY = graphRect.maxY - textReserve
 
-        NSColor.black.withAlphaComponent(0.15).setFill()
+        NSColor.black.withAlphaComponent(0.075).setFill()
         let bgPath = NSBezierPath(roundedRect: graphRect, xRadius: 6, yRadius: 6)
         bgPath.fill()
 
@@ -346,16 +377,25 @@ class OverlayView: NSView {
         }
 
 
+        let actualMax = latencyData.map { $0.ms }.max() ?? 0
         if let last = latencyData.last {
             let text: String
             let labelColor: NSColor
+            let currentText: String
             if last.timeout {
-                text = "TIMEOUT"
+                currentText = "TIMEOUT"
                 labelColor = timeoutColor.withAlphaComponent(0.8)
             } else {
-                text = String(format: "%.0f ms", last.ms)
+                currentText = String(format: "%.0f", last.ms)
                 labelColor = overlayColor.withAlphaComponent(overlayOpacity * 0.8)
             }
+            let maxText: String
+            if actualMax >= 2000 {
+                maxText = "TIMEOUT"
+            } else {
+                maxText = String(format: "%.0f", actualMax)
+            }
+            text = "\(currentText)/\(maxText)"
             let attrs: [NSAttributedString.Key: Any] = [
                 .foregroundColor: labelColor,
                 .font: NSFont.monospacedSystemFont(ofSize: 10, weight: .regular)
@@ -366,14 +406,15 @@ class OverlayView: NSView {
             str.draw(at: textPoint)
         }
 
-        let actualMax = latencyData.filter { !$0.timeout }.map { $0.ms }.max() ?? 0
-        let maxText = String(format: "max: %.0f ms", actualMax)
-        let maxAttrs: [NSAttributedString.Key: Any] = [
-            .foregroundColor: overlayColor.withAlphaComponent(overlayOpacity * 0.5),
-            .font: NSFont.monospacedSystemFont(ofSize: 9, weight: .regular)
-        ]
-        let maxStr = NSAttributedString(string: maxText, attributes: maxAttrs)
-        maxStr.draw(at: NSPoint(x: graphRect.minX + 4, y: graphRect.maxY - maxStr.size().height - 4))
+        if !traceInfo.isEmpty {
+            let traceAttrs: [NSAttributedString.Key: Any] = [
+                .foregroundColor: overlayColor.withAlphaComponent(overlayOpacity * 0.5),
+                .font: NSFont.monospacedSystemFont(ofSize: 9, weight: .regular)
+            ]
+            let traceStr = NSAttributedString(string: traceInfo, attributes: traceAttrs)
+            let traceSize = traceStr.size()
+            traceStr.draw(at: NSPoint(x: graphRect.maxX - traceSize.width - 4, y: graphRect.minY + 2))
+        }
     }
 
     func addLatency(_ ms: Double, timeout: Bool) {
