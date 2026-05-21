@@ -63,6 +63,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         startTrace()
     }
 
+    func locToFlag(_ code: String) -> String {
+        guard code.count == 2 else { return "" }
+        return code.uppercased().unicodeScalars.compactMap {
+            Unicode.Scalar(127397 + $0.value).map(String.init)
+        }.joined()
+    }
+
     func startTrace() {
         fetchTrace()
         traceTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
@@ -88,13 +95,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     loc = String(line.dropFirst(4))
                 }
             }
+            let flag = self?.locToFlag(loc) ?? ""
             let info = "\(loc) | \(ip)"
+            let infoWithFlag = "\(flag) \(loc) | \(ip)"
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 let changed = !self.overlayView.traceInfo.isEmpty && self.overlayView.traceInfo != info
                 self.overlayView.updateTraceInfo(info)
-                if self.traceHistory.isEmpty || self.traceHistory.last?.info != info {
-                    self.traceHistory.append((info: info, time: Date()))
+                if self.traceHistory.isEmpty || self.traceHistory.last?.info != infoWithFlag {
+                    self.traceHistory.append((info: infoWithFlag, time: Date()))
                     if self.traceHistory.count > self.maxTraceHistory {
                         self.traceHistory.removeFirst()
                     }
@@ -148,11 +157,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         historyView!.history = traceHistory
         historyView!.overlayColor = overlayView.overlayColor
         historyView!.overlayOpacity = overlayView.overlayOpacity
+        historyView!.isInteractive = isInteractive
         historyView!.needsDisplay = true
         historyWindow!.orderFrontRegardless()
 
-        historyHideTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: false) { [weak self] _ in
-            self?.historyWindow?.orderOut(nil)
+        if !isInteractive {
+            historyHideTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: false) { [weak self] _ in
+                self?.historyWindow?.orderOut(nil)
+            }
         }
     }
 
@@ -191,6 +203,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.backgroundColor = NSColor.black.withAlphaComponent(0.5)
         window.hasShadow = true
         overlayView.needsDisplay = true
+
+        if traceHistory.count > 1 {
+            showHistory()
+        }
 
         NotificationCenter.default.addObserver(
             self,
@@ -246,6 +262,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         exitTimer = nil
         mousePollingTimer?.invalidate()
         mousePollingTimer = nil
+        historyHideTimer?.invalidate()
+        historyWindow?.orderOut(nil)
         NotificationCenter.default.removeObserver(self, name: NSWindow.didResignKeyNotification, object: window)
         NotificationCenter.default.removeObserver(self, name: NSWindow.didMoveNotification, object: window)
 
@@ -527,6 +545,7 @@ class TraceHistoryView: NSView {
     var history: [(info: String, time: Date)] = []
     var overlayColor: NSColor = .white
     var overlayOpacity: CGFloat = 0.35
+    var isInteractive = false
 
     override func draw(_ dirtyRect: NSRect) {
         NSColor.clear.setFill()
@@ -538,7 +557,8 @@ class TraceHistoryView: NSView {
         let lineHeight: CGFloat = 16
         let contentRect = bounds.insetBy(dx: padding, dy: padding / 2)
 
-        NSColor.black.withAlphaComponent(0.075).setFill()
+        let bgAlpha: CGFloat = isInteractive ? 0.5 : 0.075
+        NSColor.black.withAlphaComponent(bgAlpha).setFill()
         let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 10, dy: 0), xRadius: 6, yRadius: 6)
         bgPath.fill()
 
@@ -550,10 +570,10 @@ class TraceHistoryView: NSView {
 
             let ago = formatAgo(now.timeIntervalSince(entry.time))
             let text = "\(ago)  \(entry.info)"
-            let alpha = overlayOpacity * 0.6
+            let textColor: NSColor = NSColor.white.withAlphaComponent(1.0)
             let attrs: [NSAttributedString.Key: Any] = [
-                .foregroundColor: overlayColor.withAlphaComponent(alpha),
-                .font: NSFont.monospacedSystemFont(ofSize: 9, weight: .regular)
+                .foregroundColor: textColor,
+                .font: NSFont.monospacedSystemFont(ofSize: 10, weight: .medium)
             ]
             let str = NSAttributedString(string: text, attributes: attrs)
             str.draw(at: NSPoint(x: contentRect.minX, y: y))

@@ -3,7 +3,7 @@
 ## Interaction
 
 - The overlay starts at the right edge of the screen (upper quarter area)
-- Hover over the overlay for 1 second to show window controls (drag/close)
+- Hover over the overlay for 1 second to show window controls (drag/close) and IP history
 - Move the mouse away or switch focus — window reverts to transparent overlay after 1 second
 - Click the **◉** icon in the menu bar to access controls:
   - **Toggle Overlay** — show/hide the overlay
@@ -15,12 +15,23 @@
 
 - **Blue line** — normal latency (lower is better)
 - **Yellow dots** — timeout points (request took >2s)
-- **"TIMEOUT" label** — current ping timed out
-- **max: Xms** — highest latency in the current data window
+- **current/max** — current and maximum latency in the data window
+- **"TIMEOUT"** — current or max ping timed out
+
+## IP/Location Tracking
+
+- Fetches IP and geo location from Cloudflare every 10 seconds
+- Displays current location with country flag emoji in the history panel
+- When IP or location changes:
+  - Current trace text flashes white briefly
+  - History panel appears below the overlay showing last 20 changes with time-ago labels
+  - History panel auto-hides after 10 seconds
+- Hover to show the title bar also reveals the history panel (stays until hover ends)
 
 ## Technical Details
 
 - Pings `https://cp.cloudflare.com/generate_204` every 2 seconds
+- Fetches `https://cloudflare.com/cdn-cgi/trace` every 10 seconds for IP/location
 - Each ping creates a fresh ephemeral URLSession (no connection reuse) to measure full DNS + TCP + TLS latency
 - Request timeout is 2 seconds; overlapping requests are skipped
 - Y-axis fixed at 2000ms for stable visual reference
