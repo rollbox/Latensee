@@ -1,5 +1,7 @@
 # Latensee
 
+[![CI](https://github.com/rollbox/Latensee/actions/workflows/ci.yml/badge.svg)](https://github.com/rollbox/Latensee/actions/workflows/ci.yml)
+
 A minimal macOS overlay that monitors network latency in real time by pinging Cloudflare.
 
 ## Build & Run
