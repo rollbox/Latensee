@@ -319,7 +319,8 @@ class OverlayView: NSView {
         var timeoutPoints: [NSPoint] = []
 
         for (i, entry) in latencyData.enumerated() {
-            let x = graphRect.minX + stepX * CGFloat(i)
+            let offset = maxDataPoints - latencyData.count
+            let x = graphRect.minX + stepX * CGFloat(i + offset)
             let y = graphRect.minY + curveHeight * CGFloat(min(entry.ms / maxLatency, 1.0))
             let point = NSPoint(x: x, y: min(y, curveMaxY))
 
