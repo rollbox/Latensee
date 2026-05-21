@@ -319,6 +319,7 @@ class OverlayView: NSView {
         linePath.lineWidth = 1.5
 
         var inTimeoutRegion = false
+        var timeoutRegionStart: Int? = nil
 
         for (i, entry) in latencyData.enumerated() {
             let x = graphRect.minX + stepX * CGFloat(i)
@@ -336,23 +337,19 @@ class OverlayView: NSView {
 
             if entry.timeout {
                 if !inTimeoutRegion {
-                    timeoutFillPath.move(to: NSPoint(x: x, y: graphRect.minY))
+                    timeoutRegionStart = i
                 }
-                timeoutFillPath.line(to: point)
                 inTimeoutRegion = true
             } else {
-                if inTimeoutRegion {
-                    timeoutFillPath.line(to: point)
-                    timeoutFillPath.line(to: NSPoint(x: x, y: graphRect.minY))
-                    timeoutFillPath.close()
+                if inTimeoutRegion, let start = timeoutRegionStart, i - start >= 2 {
+                    drawTimeoutRegion(path: timeoutFillPath, start: start, end: i - 1, graphRect: graphRect, stepX: stepX, curveHeight: curveHeight, curveMaxY: curveMaxY, maxLatency: maxLatency)
                 }
                 inTimeoutRegion = false
+                timeoutRegionStart = nil
             }
         }
-        if inTimeoutRegion {
-            let lastX = graphRect.minX + stepX * CGFloat(latencyData.count - 1)
-            timeoutFillPath.line(to: NSPoint(x: lastX, y: graphRect.minY))
-            timeoutFillPath.close()
+        if inTimeoutRegion, let start = timeoutRegionStart, latencyData.count - start >= 2 {
+            drawTimeoutRegion(path: timeoutFillPath, start: start, end: latencyData.count - 1, graphRect: graphRect, stepX: stepX, curveHeight: curveHeight, curveMaxY: curveMaxY, maxLatency: maxLatency)
         }
 
         let lastX = graphRect.minX + stepX * CGFloat(latencyData.count - 1)
@@ -362,7 +359,9 @@ class OverlayView: NSView {
         fillPath.fill()
 
         timeoutColor.withAlphaComponent(0.2).setFill()
-        timeoutFillPath.fill()
+        if !timeoutFillPath.isEmpty {
+            timeoutFillPath.fill()
+        }
 
         overlayColor.withAlphaComponent(overlayOpacity).setStroke()
         linePath.stroke()
@@ -396,6 +395,20 @@ class OverlayView: NSView {
         ]
         let maxStr = NSAttributedString(string: maxText, attributes: maxAttrs)
         maxStr.draw(at: NSPoint(x: graphRect.minX + 4, y: graphRect.maxY - maxStr.size().height - 4))
+    }
+
+    func drawTimeoutRegion(path: NSBezierPath, start: Int, end: Int, graphRect: NSRect, stepX: CGFloat, curveHeight: CGFloat, curveMaxY: CGFloat, maxLatency: Double) {
+        guard start <= end, start < latencyData.count, end < latencyData.count else { return }
+        let startX = graphRect.minX + stepX * CGFloat(start)
+        path.move(to: NSPoint(x: startX, y: graphRect.minY))
+        for j in start...end {
+            let jx = graphRect.minX + stepX * CGFloat(j)
+            let jy = graphRect.minY + curveHeight * CGFloat(min(latencyData[j].ms / maxLatency, 1.0))
+            path.line(to: NSPoint(x: jx, y: min(jy, curveMaxY)))
+        }
+        let endX = graphRect.minX + stepX * CGFloat(end)
+        path.line(to: NSPoint(x: endX, y: graphRect.minY))
+        path.close()
     }
 
     func addLatency(_ ms: Double, timeout: Bool) {
