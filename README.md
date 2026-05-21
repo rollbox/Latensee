@@ -1,22 +1,8 @@
 # Latensee
 
-A minimal macOS overlay app that continuously pings Cloudflare and displays network latency as a real-time graph.
+A minimal macOS overlay that monitors network latency in real time by pinging Cloudflare.
 
-## Features
-
-- Pings `https://cp.cloudflare.com/generate_204` every 2 seconds
-- Displays latency as a live line chart (up to 60 data points)
-- Fixed Y-axis at 2000ms for stable visual reference
-- Latest data point always at right edge (Grafana-style scrolling)
-- Timeout handling: skips overlapping requests, 2s timeout, yellow dot markers for timeouts
-- Shows current latency value and max latency in the graph
-- Transparent overlay that stays on top of all windows
-- Passes through all mouse/keyboard input in normal mode
-- Hover for 1 second to enter interactive mode (drag, close)
-- Interactive window auto-hides 1 second after mouse leaves or focus is lost
-- Menu bar icon (◉) for quick control
-- Adjustable opacity (10%–50%)
-- Multiple color presets (Light Blue, Silver, Lavender, Rose, White)
+![macOS](https://img.shields.io/badge/macOS-13%2B-blue)
 
 ## Build & Run
 
@@ -25,26 +11,12 @@ swiftc main.swift -o latensee
 ./latensee
 ```
 
-## Usage
+## Overview
 
-- The overlay starts at the right edge of the screen (upper quarter area)
-- Hover over the overlay for 1 second to show window controls (drag/close)
-- Move the mouse away or switch focus — window reverts to transparent overlay after 1 second
-- Click the **◉** icon in the menu bar to access controls:
-  - **Toggle Overlay** — show/hide the overlay
-  - **Opacity** — choose transparency level
-  - **Color** — choose overlay tint
-  - **Quit** (⌘Q) — exit the app
+- Pings `https://cp.cloudflare.com/generate_204` every 2 seconds
+- Displays a live latency graph (fixed 2000ms Y-axis, Grafana-style scrolling)
+- Transparent always-on-top overlay with hover-to-interact
+- Yellow dots indicate timeout (>2s)
+- Menu bar control (◉) for opacity, color, and visibility
 
-## Graph Indicators
-
-- **Blue line** — normal latency (lower is better)
-- **Yellow dots** — timeout points (request took >2s)
-- **"TIMEOUT" label** — current ping timed out
-- **max: Xms** — highest latency in the current window
-
-## Use Cases
-
-- Monitor network connectivity and latency in real time
-- Quick visual indicator for network issues or timeouts
-- Lightweight always-on-top network health widget
+See [USAGE.md](USAGE.md) for detailed usage and configuration.
