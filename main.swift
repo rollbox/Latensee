@@ -202,6 +202,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.isMovableByWindowBackground = true
         window.backgroundColor = NSColor.black.withAlphaComponent(0.5)
         window.hasShadow = true
+        overlayView.isInteractive = true
         overlayView.needsDisplay = true
 
         if traceHistory.count > 1 {
@@ -273,6 +274,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.backgroundColor = .clear
         window.hasShadow = false
         window.isMovableByWindowBackground = false
+        overlayView.isInteractive = false
         overlayView.needsDisplay = true
     }
 
@@ -398,6 +400,7 @@ class OverlayView: NSView {
     var traceInfo: String = ""
     var traceHighlight: CGFloat = 0
     var highlightTimer: Timer?
+    var isInteractive = false
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
@@ -457,7 +460,8 @@ class OverlayView: NSView {
             }
         }
 
-        overlayColor.withAlphaComponent(overlayOpacity).setStroke()
+        let lineColor: NSColor = isInteractive ? NSColor.white : overlayColor.withAlphaComponent(overlayOpacity)
+        lineColor.setStroke()
         linePath.stroke()
 
         // timeout dot markers
@@ -475,10 +479,10 @@ class OverlayView: NSView {
             let currentText: String
             if last.timeout {
                 currentText = "TIMEOUT"
-                labelColor = timeoutColor.withAlphaComponent(0.8)
+                labelColor = isInteractive ? NSColor.white : timeoutColor.withAlphaComponent(0.8)
             } else {
                 currentText = String(format: "%.0f", last.ms)
-                labelColor = overlayColor.withAlphaComponent(overlayOpacity * 0.8)
+                labelColor = isInteractive ? NSColor.white : overlayColor.withAlphaComponent(overlayOpacity * 0.8)
             }
             let maxText: String
             if actualMax >= 2000 {
@@ -498,10 +502,16 @@ class OverlayView: NSView {
         }
 
         if !traceInfo.isEmpty {
-            let baseAlpha = overlayOpacity * 0.5
-            let highlightAlpha = baseAlpha + (1.0 - baseAlpha) * traceHighlight
+            let traceColor: NSColor
+            if isInteractive {
+                traceColor = NSColor.white
+            } else {
+                let baseAlpha = overlayOpacity * 0.5
+                let highlightAlpha = baseAlpha + (1.0 - baseAlpha) * traceHighlight
+                traceColor = NSColor.white.withAlphaComponent(highlightAlpha)
+            }
             let traceAttrs: [NSAttributedString.Key: Any] = [
-                .foregroundColor: NSColor.white.withAlphaComponent(highlightAlpha),
+                .foregroundColor: traceColor,
                 .font: NSFont.monospacedSystemFont(ofSize: 9, weight: .regular)
             ]
             let traceStr = NSAttributedString(string: traceInfo, attributes: traceAttrs)
