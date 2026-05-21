@@ -6,12 +6,13 @@ A minimal macOS overlay app that continuously pings Cloudflare and displays netw
 
 - Pings `https://cp.cloudflare.com/generate_204` every 2 seconds
 - Displays latency as a live line chart (up to 60 data points)
+- Fixed Y-axis at 2000ms for stable visual reference
+- Timeout handling: skips overlapping requests, 2s timeout, golden yellow fill for timeout regions
+- Shows current latency value and max latency in the graph
 - Transparent overlay that stays on top of all windows
 - Passes through all mouse/keyboard input in normal mode
 - Hover for 1 second to enter interactive mode (drag, close)
 - Interactive window auto-hides 1 second after mouse leaves or focus is lost
-- Timeout handling: skips overlapping requests, 2s timeout, timeout markers shown as red dots
-- Y-axis auto-scales based on 90th percentile of successful pings
 - Menu bar icon (◉) for quick control
 - Adjustable opacity (10%–50%)
 - Multiple color presets (Light Blue, Silver, Lavender, Rose, White)
@@ -33,6 +34,13 @@ swiftc main.swift -o overlay
   - **Opacity** — choose transparency level
   - **Color** — choose overlay tint
   - **Quit** (⌘Q) — exit the app
+
+## Graph Indicators
+
+- **Blue line/fill** — normal latency (lower is better)
+- **Golden yellow fill** — timeout regions (request took >2s)
+- **"TIMEOUT" label** — current ping timed out
+- **max: Xms** — highest latency in the current window
 
 ## Use Cases
 
