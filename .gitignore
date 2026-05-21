@@ -1,5 +1,6 @@
 overlay
 latensee
+Latensee.app/
 *.o
 .DS_Store
 ScreenShot_*.png

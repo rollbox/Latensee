@@ -5,8 +5,8 @@ A minimal macOS overlay that monitors network latency in real time by pinging Cl
 ## Build & Run
 
 ```bash
-swiftc main.swift -o latensee
-./latensee
+./build.sh
+open Latensee.app
 ```
 
 ## Overview
