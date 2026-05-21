@@ -404,7 +404,7 @@ class OverlayView: NSView {
     var overlayColor: NSColor = NSColor(red: 0.7, green: 0.8, blue: 0.9, alpha: 1.0)
     var overlayOpacity: CGFloat = 0.35
     var latencyData: [(ms: Double, timeout: Bool)] = []
-    let maxDataPoints = 60
+    let maxDataPoints = 30
     weak var appDelegate: AppDelegate?
     var traceInfo: String = ""
     var traceHighlight: CGFloat = 0
