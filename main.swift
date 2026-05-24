@@ -192,7 +192,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let inside = window.frame.contains(NSEvent.mouseLocation)
         if inside && !mouseWasInside {
             hoverTimer?.invalidate()
-            hoverTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
+            hoverTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { [weak self] _ in
                 self?.enterInteractiveMode()
             }
         } else if !inside && mouseWasInside {
@@ -291,6 +291,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         overlayView.needsDisplay = true
         window.ignoresMouseEvents = true
         mouseWasInside = false
+        DispatchQueue.main.async { [weak self] in
+            self?.window.ignoresMouseEvents = true
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
