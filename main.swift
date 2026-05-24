@@ -177,26 +177,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    var hoverPollingTimer: Timer?
+    var mouseWasInside = false
+
     func setupMouseTracking() {
-        window.ignoresMouseEvents = false
-        window.acceptsMouseMovedEvents = true
-    }
-
-    func onMouseEntered() {
-        exitTimer?.invalidate()
-        exitTimer = nil
-        hoverTimer?.invalidate()
-        hoverTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
-            self?.enterInteractiveMode()
+        window.ignoresMouseEvents = true
+        hoverPollingTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] _ in
+            self?.pollHover()
         }
     }
 
-    func onMouseExited() {
-        hoverTimer?.invalidate()
-        hoverTimer = nil
-        if isInteractive {
-            scheduleExit()
+    func pollHover() {
+        guard !isInteractive else { return }
+        let inside = window.frame.contains(NSEvent.mouseLocation)
+        if inside && !mouseWasInside {
+            hoverTimer?.invalidate()
+            hoverTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
+                self?.enterInteractiveMode()
+            }
+        } else if !inside && mouseWasInside {
+            hoverTimer?.invalidate()
+            hoverTimer = nil
         }
+        mouseWasInside = inside
     }
 
     func enterInteractiveMode() {
@@ -204,6 +207,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         exitTimer?.invalidate()
         exitTimer = nil
 
+        window.ignoresMouseEvents = false
         savedFrame = window.frame
         window.styleMask = [.titled, .closable, .miniaturizable]
         window.titlebarAppearsTransparent = true
@@ -285,6 +289,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.isMovableByWindowBackground = false
         overlayView.isInteractive = false
         overlayView.needsDisplay = true
+        window.ignoresMouseEvents = true
+        mouseWasInside = false
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -411,21 +417,6 @@ class OverlayView: NSView {
     var highlightTimer: Timer?
     var isInteractive = false
     var isHighlighted = false
-
-    override func updateTrackingAreas() {
-        super.updateTrackingAreas()
-        for area in trackingAreas { removeTrackingArea(area) }
-        let options: NSTrackingArea.Options = [.mouseEnteredAndExited, .activeAlways, .inVisibleRect]
-        addTrackingArea(NSTrackingArea(rect: .zero, options: options, owner: self, userInfo: nil))
-    }
-
-    override func mouseEntered(with event: NSEvent) {
-        appDelegate?.onMouseEntered()
-    }
-
-    override func mouseExited(with event: NSEvent) {
-        appDelegate?.onMouseExited()
-    }
 
     override func draw(_ dirtyRect: NSRect) {
         NSColor.clear.setFill()
