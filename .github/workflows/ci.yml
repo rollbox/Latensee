@@ -17,3 +17,12 @@ jobs:
 
       - name: Verify binary
         run: file latensee
+
+      - name: Build app bundle
+        run: ./build.sh
+
+      - name: Verify app bundle
+        run: |
+          test -x Latensee.app/Contents/MacOS/Latensee
+          test -f Latensee.app/Contents/Info.plist
+          file Latensee.app/Contents/MacOS/Latensee
