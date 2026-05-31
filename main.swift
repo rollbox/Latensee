@@ -19,7 +19,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let pingURL = URL(string: "https://cp.cloudflare.com/generate_204")!
     let traceURL = URL(string: "https://cloudflare.com/cdn-cgi/trace")!
     var traceTimer: Timer?
-    var traceHistory: [(info: String, time: Date)] = []
+    var traceHistory: [(flag: String, info: String, time: Date)] = []
     let maxTraceHistory = 20
     var historyWindow: NSWindow?
     var historyView: TraceHistoryView?
@@ -97,13 +97,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             let flag = self?.locToFlag(loc) ?? ""
             let info = "\(loc) | \(ip)"
-            let infoWithFlag = "\(flag) \(loc) | \(ip)"
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 let changed = !self.overlayView.traceInfo.isEmpty && self.overlayView.traceInfo != info
                 self.overlayView.updateTraceInfo(info)
-                if self.traceHistory.isEmpty || self.traceHistory.last?.info != infoWithFlag {
-                    self.traceHistory.append((info: infoWithFlag, time: Date()))
+                if self.traceHistory.isEmpty || self.traceHistory.last?.info != info {
+                    self.traceHistory.append((flag: flag, info: info, time: Date()))
                     if self.traceHistory.count > self.maxTraceHistory {
                         self.traceHistory.removeFirst()
                     }
@@ -562,7 +561,7 @@ class OverlayView: NSView {
 }
 
 class TraceHistoryView: NSView {
-    var history: [(info: String, time: Date)] = []
+    var history: [(flag: String, info: String, time: Date)] = []
     var overlayColor: NSColor = .white
     var overlayOpacity: CGFloat = 0.35
     var isInteractive = false
@@ -604,12 +603,24 @@ class TraceHistoryView: NSView {
             let agoSize = agoStr.size()
             agoStr.draw(at: NSPoint(x: contentRect.maxX - agoSize.width, y: agoY))
 
-            let infoStr = NSAttributedString(string: entry.info, attributes: [
+            let infoAttrStr = NSMutableAttributedString()
+            if !entry.flag.isEmpty {
+                let emojiFont = NSFont(name: "Apple Color Emoji", size: 10) ?? NSFont.systemFont(ofSize: 10)
+                let flagStr = NSAttributedString(string: entry.flag, attributes: [
+                    .foregroundColor: textColor,
+                    .font: emojiFont
+                ])
+                infoAttrStr.append(flagStr)
+                infoAttrStr.append(NSAttributedString(string: " "))
+            }
+            let bodyStr = NSAttributedString(string: entry.info, attributes: [
                 .foregroundColor: textColor,
                 .font: textFont
             ])
-            let infoSize = infoStr.size()
-            infoStr.draw(at: NSPoint(x: contentRect.maxX - infoSize.width, y: infoY))
+            infoAttrStr.append(bodyStr)
+
+            let infoSize = infoAttrStr.size()
+            infoAttrStr.draw(at: NSPoint(x: contentRect.maxX - infoSize.width, y: infoY))
         }
     }
 
