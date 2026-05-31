@@ -605,10 +605,9 @@ class TraceHistoryView: NSView {
 
             let infoAttrStr = NSMutableAttributedString()
             if !entry.flag.isEmpty {
-                let emojiFont = NSFont(name: "Apple Color Emoji", size: 10) ?? NSFont.systemFont(ofSize: 10)
                 let flagStr = NSAttributedString(string: entry.flag, attributes: [
                     .foregroundColor: textColor,
-                    .font: emojiFont
+                    .font: textFont
                 ])
                 infoAttrStr.append(flagStr)
                 infoAttrStr.append(NSAttributedString(string: " "))

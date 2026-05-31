@@ -38,3 +38,4 @@
 - Y-axis fixed at 2000ms for stable visual reference
 - Up to 30 data points displayed, latest always at the right edge
 - Transparent overlay stays on top of all windows and across all Spaces; mouse clicks pass through unless interactive mode is active
+- Uses standard system fonts and lets macOS handle emoji font cascading dynamically, preventing CoreText crashes related to explicit "Apple Color Emoji" font instantiation
