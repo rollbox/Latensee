@@ -66,15 +66,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func locToFlag(_ code: String) -> String {
         let upper = code.uppercased()
-        guard upper.count == 2,
-              upper.first! >= "A" && upper.first! <= "Z",
-              upper.last! >= "A" && upper.last! <= "Z" else {
-            return ""
+        guard upper.count == 2 else { return "" }
+        
+        let isValid: Bool
+        if #available(macOS 13.0, *) {
+            isValid = Locale.Region.isoRegions.contains { $0.identifier == upper }
+        } else {
+            isValid = Locale.isoRegionCodes.contains(upper)
         }
-        let exclusions = ["XX", "AP", "EU", "T1"]
-        if exclusions.contains(upper) {
+        
+        guard isValid else {
             return "🌐"
         }
+        
         return upper.unicodeScalars.compactMap {
             Unicode.Scalar(127397 + $0.value).map(String.init)
         }.joined()
