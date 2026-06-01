@@ -6,11 +6,6 @@
 - Clicks pass through the overlay to the window beneath
 - Hover over the overlay for 5 seconds to show window controls (drag/close) and IP history
 - Move the mouse away or switch focus — window reverts to click-through overlay after 1 second
-- Click the **◉** icon in the menu bar to access controls:
-  - **Toggle Overlay** — show/hide the overlay
-  - **Opacity** — choose transparency level (10%–50%)
-  - **Color** — choose overlay tint (Light Blue, Silver, Lavender, Rose, White)
-  - **Quit** (⌘Q) — exit the app
 
 ## Graph Indicators
 

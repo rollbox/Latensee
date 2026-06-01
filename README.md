@@ -20,6 +20,5 @@ open Latensee.app
 - Tracks last 20 IP/location changes with timestamps
 - Transparent always-on-top overlay with click pass-through; hover 5s to interact
 - Yellow dots indicate timeout (>2s)
-- Menu bar control (◉) for opacity, color, and visibility
 
-See [USAGE.md](USAGE.md) for detailed usage and configuration.
+See [AGENT.md](AGENT.md) for detailed usage and configuration.
