@@ -1,38 +1,48 @@
-# Usage
+# Latensee Agent Guide
 
-## Interaction
+Developer and agent instructions for building, running, and modifying Latensee.
 
-- The overlay starts at the right edge of the screen (upper quarter area)
-- Clicks pass through the overlay to the window beneath
-- Hover over the overlay for 5 seconds to show window controls (drag/close) and IP history
-- Move the mouse away or switch focus — window reverts to click-through overlay after 1 second
+## Project Structure & Entry Points
 
-## Graph Indicators
+- **[main.swift](file:///Users/rollbox/Downloads/tmp/github/Latensee/main.swift)**: Contains the entire application code:
+  - `AppDelegate`: Orchestrates timers, window management, and network tasks.
+  - `OverlayWindow` & `OverlayView`: The always-on-top, click-through latency chart window.
+  - `TraceHistoryView`: The dropdown containing location and IP trace changes.
+- **[build.sh](file:///Users/rollbox/Downloads/tmp/github/Latensee/build.sh)**: Compiles the Swift code and packages it into `Latensee.app`.
+- **[Info.plist](file:///Users/rollbox/Downloads/tmp/github/Latensee/Info.plist)**: Defines the app as an accessory agent (`LSUIElement = true`) to run without a Dock icon.
 
-- **Blue line** — normal latency (lower is better)
-- **Yellow dots** — timeout points (request took >2s)
-- **current/max** — current and maximum latency in the data window
-- **"TIMEOUT"** — current or max ping timed out
+## Compilation and Execution
 
-## IP/Location Tracking
+### Build
+Compile the application by running:
+```bash
+./build.sh
+```
 
-- Fetches IP and geo location from Cloudflare every 10 seconds
-- Displays current location with country flag emoji (or a globe emoji `🌐` for generic/unknown codes) in the history panel
-- When IP or location changes:
-  - Current trace text flashes white briefly
-  - History panel appears below the overlay showing last 20 changes with time-ago labels
-  - History panel auto-hides after 10 seconds
-- Hover to show the title bar also reveals the history panel (stays until hover ends)
+### Run (with Logs)
+To capture stdout/stderr directly (crucial for catching runtime crashes/assertions):
+```bash
+./Latensee.app/Contents/MacOS/Latensee
+```
 
-## Technical Details
+### Run (via Finder)
+```bash
+open Latensee.app
+```
 
-- Pings `https://cp.cloudflare.com/generate_204` every 2 seconds
-- Fetches `https://cloudflare.com/cdn-cgi/trace` every 10 seconds for IP/location
-- Each ping creates a fresh ephemeral URLSession (no connection reuse) to measure full DNS + TCP + TLS latency
-- Request timeout is 2 seconds; overlapping requests are skipped
-- Y-axis fixed at 2000ms for stable visual reference
-- Up to 30 data points displayed, latest always at the right edge
-- Transparent overlay stays on top of all windows and across all Spaces; mouse clicks pass through unless interactive mode is active
-- Uses standard system fonts and lets macOS handle emoji font cascading dynamically, preventing CoreText crashes related to explicit "Apple Color Emoji" font instantiation
-- Renders the flag emoji and text block in separate drawing calls as plain, unstyled attributed strings, preventing CoreText crashes during attribute/font cascade merging
-- Maps non-country location codes (e.g. "XX", "AP", "EU", "T1") to a standard globe emoji "🌐" to avoid rendering invalid regional indicator sequences that can crash the system CoreText layout engine
+## Critical Developer Guidelines
+
+### 1. Memory Management for Programmatic Windows
+Since the windows are created programmatically without an `NSWindowController`, AppKit defaults `isReleasedWhenClosed` to `true`. This causes double-free or use-after-free `EXC_BAD_ACCESS` crashes when ARC cleans them up or when background timers attempt to access them post-closure.
+- **Rule**: Always set `isReleasedWhenClosed = false` on both `OverlayWindow` and any programmatic `NSWindow` (such as `historyWindow`).
+
+### 2. CoreText and Emoji Rendering Crash Prevention
+Applying styling attributes (like `.font` or `.foregroundColor`) to attributed strings containing emoji characters or trying to render invalid regional indicators (e.g., from generic region codes) triggers a CoreText crash (`TAttributes::ApplyFont`) on Apple Silicon.
+- **Rule**: Always validate country codes using Foundation's dynamic locale APIs (`Locale.Region.isoRegions` or `Locale.isoRegionCodes`).
+- **Rule**: Map non-country codes (`XX`, `AP`, `EU`, `T1`) to a standard globe emoji (`🌐`).
+- **Rule**: Draw emoji characters in a separate pass as a plain `NSAttributedString` with no styling attributes applied. Never append them directly to stylized text inside `NSMutableAttributedString`.
+
+### 3. Networking
+- Pings Cloudflare latency endpoint every 2 seconds.
+- Queries Cloudflare trace endpoint every 10 seconds.
+- Requests run asynchronously. Ensure URLSessions are terminated cleanly using `session.invalidateAndCancel()` inside completion handlers.
