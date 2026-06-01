@@ -43,6 +43,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             backing: .buffered,
             defer: false
         )
+        window.isReleasedWhenClosed = false
         window.isOpaque = false
         window.backgroundColor = .clear
         window.ignoresMouseEvents = true
@@ -64,8 +65,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func locToFlag(_ code: String) -> String {
-        guard code.count == 2 else { return "" }
-        return code.uppercased().unicodeScalars.compactMap {
+        let upper = code.uppercased()
+        guard upper.count == 2,
+              upper.first! >= "A" && upper.first! <= "Z",
+              upper.last! >= "A" && upper.last! <= "Z" else {
+            return ""
+        }
+        let exclusions = ["XX", "AP", "EU", "T1"]
+        if exclusions.contains(upper) {
+            return "🌐"
+        }
+        return upper.unicodeScalars.compactMap {
             Unicode.Scalar(127397 + $0.value).map(String.init)
         }.joined()
     }
@@ -139,6 +149,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 backing: .buffered,
                 defer: false
             )
+            historyWindow!.isReleasedWhenClosed = false
             historyWindow!.isOpaque = false
             historyWindow!.backgroundColor = .clear
             historyWindow!.ignoresMouseEvents = true
@@ -603,23 +614,22 @@ class TraceHistoryView: NSView {
             let agoSize = agoStr.size()
             agoStr.draw(at: NSPoint(x: contentRect.maxX - agoSize.width, y: agoY))
 
-            let infoAttrStr = NSMutableAttributedString()
-            if !entry.flag.isEmpty {
-                let flagStr = NSAttributedString(string: entry.flag, attributes: [
-                    .foregroundColor: textColor,
-                    .font: textFont
-                ])
-                infoAttrStr.append(flagStr)
-                infoAttrStr.append(NSAttributedString(string: " "))
-            }
             let bodyStr = NSAttributedString(string: entry.info, attributes: [
                 .foregroundColor: textColor,
                 .font: textFont
             ])
-            infoAttrStr.append(bodyStr)
+            let bodySize = bodyStr.size()
 
-            let infoSize = infoAttrStr.size()
-            infoAttrStr.draw(at: NSPoint(x: contentRect.maxX - infoSize.width, y: infoY))
+            if !entry.flag.isEmpty {
+                let flagStr = NSAttributedString(string: entry.flag)
+                let flagSize = flagStr.size()
+                let totalWidth = bodySize.width + flagSize.width + 4
+
+                flagStr.draw(at: NSPoint(x: contentRect.maxX - totalWidth, y: infoY))
+                bodyStr.draw(at: NSPoint(x: contentRect.maxX - bodySize.width, y: infoY))
+            } else {
+                bodyStr.draw(at: NSPoint(x: contentRect.maxX - bodySize.width, y: infoY))
+            }
         }
     }
 
