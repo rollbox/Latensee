@@ -4,12 +4,12 @@ Developer and agent instructions for building, running, and modifying Latensee.
 
 ## Project Structure & Entry Points
 
-- **[main.swift](file:///Users/rollbox/Downloads/tmp/github/Latensee/main.swift)**: Contains the entire application code:
+- **[main.swift](main.swift)**: Contains the entire application code:
   - `AppDelegate`: Orchestrates timers, window management, and network tasks.
   - `OverlayWindow` & `OverlayView`: The always-on-top, click-through latency chart window.
   - `TraceHistoryView`: The dropdown containing location and IP trace changes.
-- **[build.sh](file:///Users/rollbox/Downloads/tmp/github/Latensee/build.sh)**: Compiles the Swift code and packages it into `Latensee.app`.
-- **[Info.plist](file:///Users/rollbox/Downloads/tmp/github/Latensee/Info.plist)**: Defines the app as an accessory agent (`LSUIElement = true`) to run without a Dock icon.
+- **[build.sh](build.sh)**: Compiles the Swift code and packages it into `Latensee.app`.
+- **[Info.plist](Info.plist)**: Defines the app as an accessory agent (`LSUIElement = true`) to run without a Dock icon.
 
 ## Compilation and Execution
 
