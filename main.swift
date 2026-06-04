@@ -600,10 +600,13 @@ class TraceHistoryView: NSView {
 
         let now = Date()
         let pastEntries = history.dropLast().reversed()
-        let agoColor: NSColor = isHighlighted ? NSColor.white.withAlphaComponent(0.5) : overlayColor.withAlphaComponent(overlayOpacity * 0.3)
-        let textColor: NSColor = isHighlighted ? NSColor.white : overlayColor.withAlphaComponent(overlayOpacity * 0.6)
-        let agoFont = NSFont.monospacedSystemFont(ofSize: 9, weight: .regular)
-        let textFont = NSFont.systemFont(ofSize: 10, weight: .medium)
+        
+        let baseColor = overlayColor.usingColorSpace(.deviceRGB) ?? NSColor.white
+        let agoColor = isHighlighted ? NSColor.white.withAlphaComponent(0.5) : baseColor.withAlphaComponent(overlayOpacity * 0.3)
+        let textColor = isHighlighted ? NSColor.white : baseColor.withAlphaComponent(overlayOpacity * 0.6)
+        
+        let agoFont = NSFont(name: "Menlo", size: 9) ?? NSFont.userFixedPitchFont(ofSize: 9) ?? NSFont.systemFont(ofSize: 9)
+        let textFont = NSFont(name: "Helvetica-Bold", size: 10) ?? NSFont.systemFont(ofSize: 10)
 
         for (i, entry) in pastEntries.enumerated() {
             let infoY = contentRect.maxY - CGFloat(i * 2 + 2) * lineHeight
