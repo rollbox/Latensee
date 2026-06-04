@@ -37,10 +37,9 @@ Since the windows are created programmatically without an `NSWindowController`, 
 - **Rule**: Always set `isReleasedWhenClosed = false` on both `OverlayWindow` and any programmatic `NSWindow` (such as `historyWindow`).
 
 ### 2. CoreText and Emoji Rendering Crash Prevention
-Applying styling attributes (like `.font` or `.foregroundColor`) to attributed strings containing emoji characters or trying to render invalid regional indicators (e.g., from generic region codes) triggers a CoreText crash (`TAttributes::ApplyFont`) on Apple Silicon.
-- **Rule**: Always validate country codes using Foundation's dynamic locale APIs (`Locale.Region.isoRegions` or `Locale.isoRegionCodes`).
-- **Rule**: Map non-country codes (`XX`, `AP`, `EU`, `T1`) to a standard globe emoji (`🌐`).
-- **Rule**: Draw emoji characters in a separate pass as a plain `NSAttributedString` with no styling attributes applied. Never append them directly to stylized text inside `NSMutableAttributedString`.
+Rendering emoji characters (such as flags or globes) under CoreText in custom view draw passes on macOS can trigger internal system-level crashes (`TAttributes::ApplyFont`) due to font cascading dictionary errors.
+- **Rule**: To prevent this crash entirely, do not draw emoji characters (like flag or globe emojis) in attributed text rendered within custom draw routines (`draw(_:)`). Keep all rendering strings as plain alphanumeric text (e.g., displaying the text location code `"US"` instead of the flag emoji `"🇺🇸"`).
+- **Rule**: Keep country code validation using Foundation's dynamic locale APIs (`Locale.Region.isoRegions` or `Locale.isoRegionCodes`) to dynamically ensure only valid location codes are accepted.
 
 ### 3. Networking
 - Pings Cloudflare latency endpoint every 2 seconds.

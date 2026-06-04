@@ -623,17 +623,7 @@ class TraceHistoryView: NSView {
                 .font: textFont
             ])
             let bodySize = bodyStr.size()
-
-            if !entry.flag.isEmpty {
-                let flagStr = NSAttributedString(string: entry.flag)
-                let flagSize = flagStr.size()
-                let totalWidth = bodySize.width + flagSize.width + 4
-
-                flagStr.draw(at: NSPoint(x: contentRect.maxX - totalWidth, y: infoY))
-                bodyStr.draw(at: NSPoint(x: contentRect.maxX - bodySize.width, y: infoY))
-            } else {
-                bodyStr.draw(at: NSPoint(x: contentRect.maxX - bodySize.width, y: infoY))
-            }
+            bodyStr.draw(at: NSPoint(x: contentRect.maxX - bodySize.width, y: infoY))
         }
     }
 
