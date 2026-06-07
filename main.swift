@@ -484,7 +484,8 @@ class OverlayView: NSView {
             }
         }
 
-        let lineColor: NSColor = isHighlighted ? NSColor.white : overlayColor.withAlphaComponent(overlayOpacity)
+        let baseColor = overlayColor.usingColorSpace(.deviceRGB) ?? NSColor.white
+        let lineColor: NSColor = isHighlighted ? NSColor.white : baseColor.withAlphaComponent(overlayOpacity)
         lineColor.setStroke()
         linePath.stroke()
 
@@ -506,7 +507,7 @@ class OverlayView: NSView {
                 labelColor = isHighlighted ? NSColor.white : timeoutColor.withAlphaComponent(0.8)
             } else {
                 currentText = String(format: "%.0f", last.ms)
-                labelColor = isHighlighted ? NSColor.white : overlayColor.withAlphaComponent(overlayOpacity * 0.8)
+                labelColor = isHighlighted ? NSColor.white : baseColor.withAlphaComponent(overlayOpacity * 0.8)
             }
             let maxText: String
             if actualMax >= 2000 {
@@ -515,9 +516,10 @@ class OverlayView: NSView {
                 maxText = String(format: "%.0f", actualMax)
             }
             text = "\(currentText)/\(maxText)"
+            let textFont = NSFont(name: "Menlo", size: 10) ?? NSFont.userFixedPitchFont(ofSize: 10) ?? NSFont.systemFont(ofSize: 10)
             let attrs: [NSAttributedString.Key: Any] = [
                 .foregroundColor: labelColor,
-                .font: NSFont.monospacedSystemFont(ofSize: 10, weight: .regular)
+                .font: textFont
             ]
             let str = NSAttributedString(string: text, attributes: attrs)
             let textSize = str.size()
@@ -534,9 +536,10 @@ class OverlayView: NSView {
                 let highlightAlpha = baseAlpha + (1.0 - baseAlpha) * traceHighlight
                 traceColor = NSColor.white.withAlphaComponent(highlightAlpha)
             }
+            let traceFont = NSFont(name: "Menlo", size: 9) ?? NSFont.userFixedPitchFont(ofSize: 9) ?? NSFont.systemFont(ofSize: 9)
             let traceAttrs: [NSAttributedString.Key: Any] = [
                 .foregroundColor: traceColor,
-                .font: NSFont.monospacedSystemFont(ofSize: 9, weight: .regular)
+                .font: traceFont
             ]
             let traceStr = NSAttributedString(string: traceInfo, attributes: traceAttrs)
             let traceSize = traceStr.size()

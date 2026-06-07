@@ -40,6 +40,8 @@ Since the windows are created programmatically without an `NSWindowController`, 
 Rendering emoji characters (such as flags or globes) under CoreText in custom view draw passes on macOS can trigger internal system-level crashes (`TAttributes::ApplyFont`) due to font cascading dictionary errors.
 - **Rule**: To prevent this crash entirely, do not draw emoji characters (like flag or globe emojis) in attributed text rendered within custom draw routines (`draw(_:)`). Keep all rendering strings as plain alphanumeric text (e.g., displaying the text location code `"US"` instead of the flag emoji `"🇺🇸"`).
 - **Rule**: Keep country code validation using Foundation's dynamic locale APIs (`Locale.Region.isoRegions` or `Locale.isoRegionCodes`) to dynamically ensure only valid location codes are accepted.
+- **Rule**: Avoid using dynamic system fonts (such as `NSFont.monospacedSystemFont` or `NSFont.systemFont`) inside custom draw passes (`draw(_:)`). Instead, use explicit static fonts like `"Menlo"` or `"Helvetica-Bold"` to prevent CoreText attribute rendering exceptions.
+- **Rule**: When drawing custom views, always convert colors to the `.deviceRGB` color space (e.g., using `.usingColorSpace(.deviceRGB)`) before drawing, especially if applying alpha or text attributes.
 
 ### 3. Networking
 - Pings Cloudflare latency endpoint every 2 seconds.
