@@ -22,4 +22,4 @@ open Latensee.app
 - Transparent always-on-top overlay with click pass-through; hover 5s to make the window interactive (revealing a title bar with a close button to quit)
 - Yellow dots indicate timeout (>2s)
 
-See [AGENT.md](AGENT.md) for detailed usage and configuration.
+See [AGENTS.md](AGENTS.md) for detailed usage and configuration.
