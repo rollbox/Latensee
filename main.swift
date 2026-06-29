@@ -7,7 +7,6 @@ class OverlayWindow: NSWindow {
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var window: OverlayWindow!
-    var statusItem: NSStatusItem!
     var overlayView: OverlayView!
     var isVisible = true
     var pingTimer: Timer?
@@ -59,7 +58,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.floatingWindow)))
 
         setupMouseTracking()
-        setupStatusBar()
         startPinging()
         startTrace()
     }
@@ -347,80 +345,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }.resume()
     }
 
-    func setupStatusBar() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        if let button = statusItem.button {
-            button.title = "◉"
-        }
 
-        let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Toggle Overlay", action: #selector(toggleOverlay), keyEquivalent: "t"))
-        menu.addItem(NSMenuItem.separator())
-
-        let opacityItem = NSMenuItem(title: "Opacity", action: nil, keyEquivalent: "")
-        let opacitySubmenu = NSMenu()
-        for value in [10, 20, 30, 40, 50] {
-            let item = NSMenuItem(title: "\(value)%", action: #selector(setOpacity(_:)), keyEquivalent: "")
-            item.tag = value
-            if value == 20 { item.state = .on }
-            opacitySubmenu.addItem(item)
-        }
-        opacityItem.submenu = opacitySubmenu
-        menu.addItem(opacityItem)
-
-        let colorItem = NSMenuItem(title: "Color", action: nil, keyEquivalent: "")
-        let colorSubmenu = NSMenu()
-        for (name, tag) in [("Light Blue", 0), ("Silver", 1), ("Lavender", 2), ("Rose", 3), ("White", 4)] {
-            let item = NSMenuItem(title: name, action: #selector(setColor(_:)), keyEquivalent: "")
-            item.tag = tag
-            if tag == 0 { item.state = .on }
-            colorSubmenu.addItem(item)
-        }
-        colorItem.submenu = colorSubmenu
-        menu.addItem(colorItem)
-
-        menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
-
-        statusItem.menu = menu
-    }
-
-    @objc func toggleOverlay() {
-        isVisible.toggle()
-        if isVisible {
-            window.orderFrontRegardless()
-        } else {
-            window.orderOut(nil)
-        }
-    }
-
-    @objc func setOpacity(_ sender: NSMenuItem) {
-        let opacity = CGFloat(sender.tag) / 100.0
-        overlayView.overlayOpacity = opacity
-        overlayView.needsDisplay = true
-
-        if let menu = sender.menu {
-            for item in menu.items { item.state = .off }
-        }
-        sender.state = .on
-    }
-
-    @objc func setColor(_ sender: NSMenuItem) {
-        let colors: [NSColor] = [
-            NSColor(red: 0.7, green: 0.8, blue: 0.9, alpha: 1.0),
-            NSColor(red: 0.75, green: 0.75, blue: 0.78, alpha: 1.0),
-            NSColor(red: 0.75, green: 0.7, blue: 0.85, alpha: 1.0),
-            NSColor(red: 0.85, green: 0.7, blue: 0.75, alpha: 1.0),
-            NSColor.white,
-        ]
-        overlayView.overlayColor = colors[sender.tag]
-        overlayView.needsDisplay = true
-
-        if let menu = sender.menu {
-            for item in menu.items { item.state = .off }
-        }
-        sender.state = .on
-    }
 }
 
 class OverlayView: NSView {

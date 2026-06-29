@@ -18,7 +18,8 @@ open Latensee.app
 - Displays a live latency graph (fixed 2000ms Y-axis, Grafana-style scrolling)
 - Shows current/max latency, IP address and geo location
 - Tracks last 20 IP/location changes with timestamps
-- Transparent always-on-top overlay with click pass-through; hover 5s to interact
+- Runs entirely in the background (without a Dock or Menu Bar icon)
+- Transparent always-on-top overlay with click pass-through; hover 5s to make the window interactive (revealing a title bar with a close button to quit)
 - Yellow dots indicate timeout (>2s)
 
 See [AGENT.md](AGENT.md) for detailed usage and configuration.

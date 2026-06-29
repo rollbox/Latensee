@@ -30,6 +30,13 @@ To capture stdout/stderr directly (crucial for catching runtime crashes/assertio
 open Latensee.app
 ```
 
+## Interaction & Control
+
+Since the app runs as a pure background accessory (`LSUIElement = true` and no menu bar icon):
+- **Click Pass-through**: By default, clicks pass through the overlay so it doesn't obstruct normal workflow.
+- **Interactive Mode**: Hover the mouse cursor over the overlay for **5 seconds**. The window will become active, showing a title bar and window frame, and turning the background semi-transparent.
+- **Exit/Quit**: While in interactive mode, click the close button on the window's title bar, or press `Cmd+Q` while the window is active.
+
 ## Critical Developer Guidelines
 
 ### 1. Memory Management for Programmatic Windows
